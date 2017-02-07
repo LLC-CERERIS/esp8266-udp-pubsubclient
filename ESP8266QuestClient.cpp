@@ -64,7 +64,7 @@ bool ESP8266QuestClient::publish(const char* topic, const char* message, uint16_
     _client->write((uint8_t)strlen(message));
     _client->println(message);
     _client->endPacket();
-    
+
     unsigned long timeDelay = millis();
     while(abs(millis() - timeDelay) < timeout)
     {
@@ -84,7 +84,7 @@ bool ESP8266QuestClient::publish(const char* topic, const char* message, uint16_
       yield();
       delay(1);
     }
-    
+
     retryCount--;
   }
 
@@ -101,7 +101,7 @@ bool ESP8266QuestClient::subscribe(const char* topic, uint16_t timeout, uint8_t 
     _client->write((uint8_t)strlen(topic));
     _client->print(topic);
     _client->endPacket();
-    
+
     unsigned long timeDelay = millis();
     while(abs(millis() - timeDelay) < timeout)
     {
@@ -120,7 +120,7 @@ bool ESP8266QuestClient::subscribe(const char* topic, uint16_t timeout, uint8_t 
       yield();
       delay(1);
     }
-    
+
     retryCount--;
   }
 
@@ -134,7 +134,7 @@ void ESP8266QuestClient::keepAlive(uint16_t timeout, uint8_t retryCount)
     _client->beginPacket(_address, _port);
     _client->write((uint8_t)KEEP_ALIVE_TYPE);
     _client->endPacket();
-    
+
     unsigned long timeDelay = millis();
     while(abs(millis() - timeDelay) < timeout)
     {
@@ -154,7 +154,7 @@ void ESP8266QuestClient::keepAlive(uint16_t timeout, uint8_t retryCount)
       yield();
       delay(1);
     }
-    
+
     retryCount--;
   }
 
@@ -210,6 +210,15 @@ uint8_t ESP8266QuestClient::handle(const char* data)
   }
 
   return 0;
+}
+
+void ESP8266QuestClient::smartDelay(const uint32_t delayTime)
+{
+  uint32_t time = millis();
+  while(abs(millis() - time) < delayTime)
+  {
+    this->loop();
+  }
 }
 
 void ESP8266QuestClient::loop()

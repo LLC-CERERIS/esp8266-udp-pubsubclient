@@ -47,6 +47,7 @@ public:
   void setServer(const char* address, uint16_t port);
   bool publish(const char* topic, const char* message, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
   bool subscribe(const char* topic, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+  void smartDelay(const uint32_t delayTime);
 
   void loop();
 private:
