@@ -43,7 +43,6 @@ ESP8266QuestClient& ESP8266QuestClient::setClient(WiFiUDP& client)
 
 void ESP8266QuestClient::setServer(const char* address, uint16_t port)
 {
-  _client->setTimeout(0);
   _address = address;
   _port = port;
 }
@@ -66,8 +65,8 @@ bool ESP8266QuestClient::publish(const char* topic, const char* message, uint16_
     _client->println(message);
     _client->endPacket();
     
-    unsigned long time = millis();
-    while(abs(millis() - time) < timeout)
+    unsigned long timeDelay = millis();
+    while(abs(millis() - timeDelay) < timeout)
     {
       if(_client->parsePacket())
       {
@@ -82,6 +81,8 @@ bool ESP8266QuestClient::publish(const char* topic, const char* message, uint16_
           }
         }
       }
+      yield();
+      delay(1);
     }
     
     retryCount--;
@@ -101,8 +102,8 @@ bool ESP8266QuestClient::subscribe(const char* topic, uint16_t timeout, uint8_t 
     _client->print(topic);
     _client->endPacket();
     
-    unsigned long time = millis();
-    while(abs(millis() - time) < timeout)
+    unsigned long timeDelay = millis();
+    while(abs(millis() - timeDelay) < timeout)
     {
       if(_client->parsePacket())
       {
@@ -116,6 +117,8 @@ bool ESP8266QuestClient::subscribe(const char* topic, uint16_t timeout, uint8_t 
           }
         }
       }
+      yield();
+      delay(1);
     }
     
     retryCount--;
@@ -132,8 +135,8 @@ void ESP8266QuestClient::keepAlive(uint16_t timeout, uint8_t retryCount)
     _client->write((uint8_t)KEEP_ALIVE_TYPE);
     _client->endPacket();
     
-    unsigned long time = millis();
-    while(abs(millis() - time) < timeout)
+    unsigned long timeDelay = millis();
+    while(abs(millis() - timeDelay) < timeout)
     {
       if(_client->parsePacket())
       {
@@ -148,6 +151,8 @@ void ESP8266QuestClient::keepAlive(uint16_t timeout, uint8_t retryCount)
           }
         }
       }
+      yield();
+      delay(1);
     }
     
     retryCount--;
@@ -227,5 +232,7 @@ void ESP8266QuestClient::loop()
         _buffer[0] = 0;
       }
     }
+    yield();
+    delay(1);
   }
 }

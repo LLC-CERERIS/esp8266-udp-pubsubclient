@@ -29,6 +29,8 @@
 #define KEEP_ALIVE_TYPE 4
 
 #define DEFAULT_KEEP_ALIVE_TIMEOUT 5
+#define DEFAULT_RETRY_COUNT 10
+#define DEFAULT_TIMEOUT 1000
 #define BUFFER_SIZE 255
 
 class ESP8266QuestClient
@@ -40,16 +42,16 @@ public:
   ESP8266QuestClient& setCallback(CALLBACK_SIGNATURE);
   ESP8266QuestClient& setConnectCallback(CONNECT_CALLBACK_SIGNATURE);
   ESP8266QuestClient& setClient(WiFiUDP& client);
-  ESP8266QuestClient& setKeepAliveTimeout(uint8_t timeout = 10);
+  ESP8266QuestClient& setKeepAliveTimeout(uint8_t timeout = DEFAULT_KEEP_ALIVE_TIMEOUT);
 
   void setServer(const char* address, uint16_t port);
-  bool publish(const char* topic, const char* message, uint16_t timeout = 500, uint8_t retryCount = 3);
-  bool subscribe(const char* topic, uint16_t timeout = 500, uint8_t retryCount = 3);
+  bool publish(const char* topic, const char* message, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+  bool subscribe(const char* topic, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
 
   void loop();
 private:
   void setConnected(bool connected);
-  void keepAlive(uint16_t timeout = 500, uint8_t retryCount = 3);
+  void keepAlive(uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
   uint8_t handle(const char* data);
 private:
   WiFiUDP* _client;
