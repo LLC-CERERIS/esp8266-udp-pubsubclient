@@ -1,4 +1,4 @@
-# ESP8266 LIBRARY for THE BEST QUEST
-Обнаружив проблемы с MQTT (а именно с реализацией TCP сокетов в библиотеке WiFiClient для ESP8266 под Arduino IDE) пришлось реализовать подобный аналог на UDP.
-## Лицензия
-Все права принадлежат LLC CERERIS.
+# ESP8266 UDP Publisher Subscriber Client 
+### A library for esp8266 wifi microcontroller using publish–subscribe model (like MQTT) but with UDP transport protocol
+## LICENSE
+MIT
