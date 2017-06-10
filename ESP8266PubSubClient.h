@@ -33,34 +33,33 @@
 #define DEFAULT_TIMEOUT 1000
 #define BUFFER_SIZE 255
 
-class ESP8266QuestClient
-{
+class ESP8266PubSubClient {
 public:
-  ESP8266QuestClient();
-  ESP8266QuestClient(WiFiUDP& wifiClient);
+  ESP8266PubSubClient();
+  ESP8266PubSubClient(WiFiUDP &wifiClient);
 
-  ESP8266QuestClient& setCallback(CALLBACK_SIGNATURE);
-  ESP8266QuestClient& setConnectCallback(CONNECT_CALLBACK_SIGNATURE);
-  ESP8266QuestClient& setClient(WiFiUDP& client);
-  ESP8266QuestClient& setKeepAliveTimeout(uint8_t timeout = DEFAULT_KEEP_ALIVE_TIMEOUT);
+  ESP8266PubSubClient &setCallback(CALLBACK_SIGNATURE);
+  ESP8266PubSubClient &setConnectCallback(CONNECT_CALLBACK_SIGNATURE);
+  ESP8266PubSubClient &setClient(WiFiUDP &client);
+  ESP8266PubSubClient &setKeepAliveTimeout(uint8_t timeout = DEFAULT_KEEP_ALIVE_TIMEOUT);
 
-  void setServer(const char* address, uint16_t port);
-  bool publish(const char* topic, const char* message, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
-  bool subscribe(const char* topic, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+  void setServer(const char *address, uint16_t port);
+  bool publish(const char *topic, const char *message, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+  bool subscribe(const char *topic, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
   void smartDelay(const uint32_t delayTime);
 
   void loop();
 private:
   void setConnected(bool connected);
   void keepAlive(uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
-  uint8_t handle(const char* data);
+  uint8_t handle(const char *data);
 private:
-  WiFiUDP* _client;
+  WiFiUDP *_client;
   CALLBACK_SIGNATURE;
   CONNECT_CALLBACK_SIGNATURE;
   char _buffer[BUFFER_SIZE];
   uint8_t _keepAliveTimeout;
-  const char* _address;
+  const char *_address;
   uint16_t _port;
   bool _connected;
   unsigned long _time;
