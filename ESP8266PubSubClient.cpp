@@ -155,9 +155,9 @@ uint8_t ESP8266PubSubClient::handle(const char *data) {
       case PUBLISH_TYPE:
         if (len > 1) {
           uint8_t topicLength = (uint8_t) _buffer[1];
-          if (len >= topicLength + 2) {
+          if (len > topicLength + 2) {
             uint8_t messageLength = (uint8_t) _buffer[topicLength + 2];
-            if (len >= topicLength + messageLength + 3) {
+            if (len > topicLength + messageLength + 3) {
               if (callback) {
                 char topic[topicLength + 1];
                 char message[messageLength + 1];
