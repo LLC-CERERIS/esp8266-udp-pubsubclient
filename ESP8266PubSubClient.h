@@ -38,31 +38,49 @@ public:
   ESP8266PubSubClient();
   ESP8266PubSubClient(WiFiUDP &wifiClient);
 
+  // Sets callback which is fired when publish packet received.
+  // Process your subscriptions here.
   ESP8266PubSubClient &setCallback(CALLBACK_SIGNATURE);
+
+  // Sets connect callback which is fired when client connects to server.
+  // Send your subscriptions here.
   ESP8266PubSubClient &setConnectCallback(CONNECT_CALLBACK_SIGNATURE);
+
   ESP8266PubSubClient &setClient(WiFiUDP &client);
   ESP8266PubSubClient &setKeepAliveTimeout(uint8_t timeout = DEFAULT_KEEP_ALIVE_TIMEOUT);
 
   void setServer(const char *address, uint16_t port);
+
+  // Send publish packet to server
   bool publish(const char *topic, const char *message, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+
+  // Send subscribe packet to server
   bool subscribe(const char *topic, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+
+  // Doesn't freeze Wi-Fi & can wait in ms
   void smartDelay(const uint32_t delayTime);
 
+  // Main loop
   void loop();
 private:
+  // Set current connection state to "connected"
   void setConnected(bool connected);
+
+  // Send keep-alive packet to server
   void keepAlive(uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+
+  // Handle packet
   uint8_t handle(const char *data);
 private:
-  WiFiUDP *_client;
+  WiFiUDP *_client; // UDP client
   CALLBACK_SIGNATURE;
   CONNECT_CALLBACK_SIGNATURE;
-  char _buffer[BUFFER_SIZE];
-  uint8_t _keepAliveTimeout;
-  const char *_address;
-  uint16_t _port;
-  bool _connected;
-  unsigned long _time;
+  char _buffer[BUFFER_SIZE]; // Last packet buffer
+  uint8_t _keepAliveTimeout; // Period between keep-alive checks
+  const char *_address; // Server address
+  uint16_t _port; // Server port
+  bool _connected; // Connection state
+  unsigned long _time; // Last keep-alive check time
 };
 
 #endif
