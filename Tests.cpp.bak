@@ -1,0 +1,38 @@
+#include <iostream>
+#include "Vector.h"
+
+struct S {
+  int i1, i2, i3, i4;
+
+  S() {}
+
+  S(int i1, int i2, int i3, int i4) {
+    this->i1 = i1;
+    this->i2 = i2;
+    this->i3 = i3;
+    this->i4 = i4;
+  }
+
+  char *toString() {
+    char *str = new char[1000];
+    sprintf(str, "%i %i %i %i", i1, i2, i3, i4);
+    return str;
+  }
+};
+
+int main() {
+  Vector<S> v;
+
+  S s1(1, 2, 3, 4);
+  S s2(2, 3, 4, 5);
+  S s3(3, 4, 5, 6);
+  S s4(4, 5, 6, 7);
+  S s5(5, 6, 7, 8);
+
+  v.add(s1).add(s2).add(s3).remove(s2).add(s5).add(s4).remove(s3);
+
+  for (int i = 0; i < v.size(); i++) {
+    S s = v.get(i);
+    printf("%i %i %i %i\n", s.i1, s.i2, s.i3, s.i4);
+  }
+}
