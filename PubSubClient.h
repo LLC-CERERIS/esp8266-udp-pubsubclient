@@ -1,9 +1,12 @@
 #ifndef PUBSUBCLIENT_H
 #define PUBSUBCLIENT_H
 
+class PubSubClient;
+
 #include <Arduino.h>
 #include "WiFiUdp.h"
 #include "PubSub.h"
+#include "UDPPacket.h"
 
 class PubSubClient {
 public:
@@ -18,13 +21,18 @@ public:
   // Send your subscriptions here.
   PubSubClient &setConnectCallback(CONNECT_CALLBACK_SIGNATURE);
 
+  // Sets connect callback which is fired when client connects to server.
+  PubSubClient &setDisconnectCallback(DISCONNECT_CALLBACK_SIGNATURE);
+
   PubSubClient &setClient(WiFiUDP &client);
   PubSubClient &setKeepAliveTimeout(uint8_t timeout = DEFAULT_KEEP_ALIVE_TIMEOUT);
 
-  void setServer(char *address, uint16_t port);
+  void setServer(IPAddress *address, uint16_t port);
+
+  void setServer(char* address, uint16_t port);
 
   // Send publish packet to server
-  bool publish(char *topic, char *message, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
+  bool publish(char *topic, char *message);
 
   // Send subscribe packet to server
   bool subscribe(char *topic, uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
@@ -42,7 +50,6 @@ public:
   void setConnected(bool connected);
 
   WiFiUDP *getClient();
-  char *getBuffer();
 private:
   // Send keep-alive packet to server
   void keepAlive(uint16_t timeout = DEFAULT_TIMEOUT, uint8_t retryCount = DEFAULT_RETRY_COUNT);
@@ -50,9 +57,9 @@ private:
   WiFiUDP *_client; // UDP client
   CALLBACK_SIGNATURE;
   CONNECT_CALLBACK_SIGNATURE;
-  char _buffer[BUFFER_SIZE]; // Last packet buffer
+  DISCONNECT_CALLBACK_SIGNATURE;
   uint8_t _keepAliveTimeout; // Period between keep-alive checks
-  char *_address; // Server address
+  IPAddress *_address; // Server address
   uint16_t _port; // Server port
   bool _connected; // Connection state
   unsigned long _time; // Last keep-alive check time

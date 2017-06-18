@@ -1,5 +1,4 @@
 #include "PubSubClient.h"
-#include "UDPPacket.h"
 
 PubSubClient::PubSubClient() {
   _client = NULL;
@@ -32,7 +31,7 @@ PubSubClient &PubSubClient::setClient(WiFiUDP &client) {
   return *this;
 }
 
-void PubSubClient::setServer(char *address, uint16_t port) {
+void PubSubClient::setServer(IPAddress *address, uint16_t port) {
   _address = address;
   _port = port;
 }
@@ -42,11 +41,14 @@ PubSubClient &PubSubClient::setKeepAliveTimeout(uint8_t timeout) {
   return *this;
 }
 
-bool PubSubClient::publish(char *topic, char *message, uint16_t timeout, uint8_t retryCount) {
+bool PubSubClient::publish(char *topic, char *message) {
+  char topicLength[2] = {(char) strlen(topic), '\0'},
+          messageLength[2] = {(char) strlen(message), '\0'};
+
   UDPPacket(_address, _port, PUBLISH)
-          .add((char *) (uint8_t) strlen(topic))
+          .add(topicLength)
           .add(topic)
-          .add((char *) (uint8_t) strlen(message))
+          .add(messageLength)
           .add(message)
           .send(this);
 
@@ -54,8 +56,10 @@ bool PubSubClient::publish(char *topic, char *message, uint16_t timeout, uint8_t
 }
 
 bool PubSubClient::subscribe(char *topic, uint16_t timeout, uint8_t retryCount) {
+  char topicLength[2] = {(char) strlen(topic), '\0'};
+
   UDPPacket(_address, _port, SUBSCRIBE)
-          .add((char *) (uint8_t) strlen(topic))
+          .add(topicLength)
           .add(topic)
           .send(this);
 }
@@ -65,11 +69,21 @@ void PubSubClient::keepAlive(uint16_t timeout, uint8_t retryCount) {
 }
 
 void PubSubClient::setConnected(bool connected) {
-  // if client wasn't connected to server before this moment and connectCallback is set, fire it
-  if (connected && !_connected && connectCallback)
-    connectCallback();
+  // if client wasn't connected to server before this moment, connects now and connectCallback is set, fire it
+  if (connected && !_connected) {
+    if (connectCallback)
+      connectCallback();
 
-  _connected = connected;
+    _connected = connected;
+    UDPPacket(_address, _port, CONNECT).send(this);
+  } else if (_connected && !connected) {
+    // if client was connected to server before this moment, disconnects now and disconnectCallback is set, fire it
+    if (disconnectCallback)
+      disconnectCallback();
+
+    _connected = connected;
+    // sending disconnect packet is useless, skip it
+  }
 }
 
 Type PubSubClient::handle(const char *data) {
@@ -80,17 +94,30 @@ Type PubSubClient::handle(const char *data) {
   // we've got packet, delay next keep-alive check
   _time = millis();
 
-  Type type = (Type) _buffer[0];
+  Type type = (Type) data[0];
+
+  Serial.print("Handling packet of type ");
+  Serial.print(type);
+  Serial.print(" and length ");
+  Serial.print(len);
+  Serial.print(": ");
+  Serial.print(": >>> ");
+  for (int i = 0; i < len; i++) {
+    Serial.print((uint8_t) data[i]);
+    Serial.print(" ");
+  }
+  Serial.println("<<<");
+
   switch (type) {
     case REPLY:
       return REPLY;
     case PUBLISH:
       if (len < 2)
         return ERROR; // no topic length
-      uint8_t topicLength = (uint8_t) _buffer[1];
+      uint8_t topicLength = (uint8_t) data[1];
       if (len < topicLength + 3)
         return ERROR; // no message length
-      uint8_t messageLength = (uint8_t) _buffer[topicLength + 2];
+      uint8_t messageLength = (uint8_t) data[topicLength + 2];
       if (len < topicLength + messageLength + 4)
         return ERROR; // no message
       if (callback) {
@@ -121,12 +148,13 @@ void PubSubClient::loop() {
   }
 
   while (_client->parsePacket()) {
-    int len = _client->read(_buffer, BUFFER_SIZE);
+    char buffer[BUFFER_SIZE];
+    int len = _client->read(buffer, BUFFER_SIZE);
     if (len > 0) {
-      _buffer[len] = 0;
-      if (handle(_buffer)) {
+      buffer[len] = 0;
+      if (handle(buffer)) {
         setConnected(true);
-        _buffer[0] = 0;
+        buffer[0] = 0;
       }
     }
     yield();
@@ -138,10 +166,17 @@ WiFiUDP *PubSubClient::getClient() {
   return _client;
 }
 
-char *PubSubClient::getBuffer() {
-  return _buffer;
-}
-
 bool PubSubClient::isConnected() {
   return _connected;
+}
+
+PubSubClient &PubSubClient::setDisconnectCallback(DISCONNECT_CALLBACK_SIGNATURE) {
+  this->disconnectCallback = disconnectCallback;
+  return *this;
+}
+
+void PubSubClient::setServer(char *address, uint16_t port) {
+  _address = new IPAddress;
+  _address->fromString(address);
+  _port = port;
 }

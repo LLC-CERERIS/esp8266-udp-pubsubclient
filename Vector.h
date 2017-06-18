@@ -2,6 +2,7 @@
 #define VECTOR_H
 
 #include <cstring>
+#include "Arduino.h"
 
 template<typename T>
 class Vector {
@@ -15,8 +16,8 @@ private:
   void checkAndReallocate() {
     if (_size + 1 > _allocated) {
       T *newData = new T[_size + 1];
-      memmove(newData, data, _elementSize * _size);
-      delete data;
+      memmove(newData, data, (size_t) (_elementSize * _size));
+      delete[] data;
       data = newData;
     }
   };
@@ -24,6 +25,13 @@ private:
 public:
   typedef T *iterator;
   typedef const T *const_iterator;
+
+  ~Vector() {
+    Serial.println("Calling Vector destructor");
+    if (_size > 0)
+      delete[] data;
+    Serial.println("Vector memory freed");
+  }
 
   iterator begin() {
     return &data[0];
@@ -39,6 +47,15 @@ public:
 
   const_iterator end() const {
     return &data[_size];
+  }
+
+  // TODO: check if it works on ESP8266
+  // if "function" returns true, remove element
+  void foreach(bool (*function)(T element)) {
+    for (int i = _size - 1; i >= 0; i--) {
+      if (function(get(i)))
+        remove(i);
+    }
   }
 
   Vector<T> &add(T element) {

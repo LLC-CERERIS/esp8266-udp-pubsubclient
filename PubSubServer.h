@@ -6,47 +6,56 @@
 #include "PubSub.h"
 #include "Vector.h"
 
-struct Client {
-  char *address;
-  int port;
+// cleanup inactive clients every "CLEANUP_PERIOD"
+#define CLEANUP_PERIOD 30
+const int MAX_DISCONNECT_TIME = DEFAULT_KEEP_ALIVE_TIMEOUT * DEFAULT_RETRY_COUNT;
 
-  Client(char *address, int port) {
-    this->address = address;
-    this->port = port;
-  }
-};
+namespace PubSub {
+  struct Client {
+    IPAddress *address;
+    int port;
 
-struct Topic {
-  char *topic;
-  Client *client;
+    Client(IPAddress *address, int port) {
+      this->address = address;
+      this->port = port;
+    }
+  };
 
-  Topic() {}
+  struct Topic {
+    char *topic;
+    Client *client;
+    int lastUpdate = (int) millis();
 
-  Topic(char *topic, Client *client) {
-    this->topic = topic;
-    this->client = client;
-  }
-};
+    Topic() {}
+
+    Topic(char *topic, Client *client) {
+      this->topic = topic;
+      this->client = client;
+    }
+  };
+}
 
 class PubSubServer {
 private:
-  Vector<Topic> topics;
+  Vector<PubSub::Topic> topics;
   WiFiUDP *_client;
+  int cleanupCounter = 0;
 
 public:
-  PubSubServer();
+  PubSubServer(WiFiUDP &client);
 
   void setClient(WiFiUDP &client);
   WiFiUDP *getClient();
-  Type handle(Client *client, char *data);
+  Type handle(PubSub::Client *client, char *data);
   void loop();
-  void onClientConnected(Client *client);
-  void onClientDisconnected(Client *client);
-  void onSubscribe(Client *client, char *data);
-  void onUnsubscribe(Client *client, char *data);
+  void onClientConnected(PubSub::Client *client);
+  void onClientDisconnected(PubSub::Client *client);
+  void onSubscribe(PubSub::Client *client, char *data);
+  void onUnsubscribe(PubSub::Client *client, char *data);
   void onPublish(char *data);
-  void sendReply(Client *client);
-  void sendPublish(Client *client, char *topic, char *message);
+  void sendReply(PubSub::Client *client);
+  void sendPublish(PubSub::Client *client, char *topic, char *message);
+  void onKeepAlive(PubSub::Client *client);
 };
 
 

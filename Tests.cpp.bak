@@ -21,18 +21,11 @@ struct S {
 };
 
 int main() {
-  Vector<S> v;
+  Vector<char *> v;
 
-  S s1(1, 2, 3, 4);
-  S s2(2, 3, 4, 5);
-  S s3(3, 4, 5, 6);
-  S s4(4, 5, 6, 7);
-  S s5(5, 6, 7, 8);
-
-  v.add(s1).add(s2).add(s3).remove(s2).add(s5).add(s4).remove(s3);
+  v.add((char *) "test1").add((char *) "test2");
 
   for (int i = 0; i < v.size(); i++) {
-    S s = v.get(i);
-    printf("%i %i %i %i\n", s.i1, s.i2, s.i3, s.i4);
+    printf("%s\n", v.get(i));
   }
 }

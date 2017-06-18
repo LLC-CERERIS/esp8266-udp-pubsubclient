@@ -1,55 +1,70 @@
 #include "PubSubServer.h"
 #include "UDPPacket.h"
 
-PubSubServer::PubSubServer() {
+PubSubServer::PubSubServer(WiFiUDP &client) {
+  setClient(client);
 }
 
-Type PubSubServer::handle(Client *client, char *data) {
+Type PubSubServer::handle(PubSub::Client *client, char *data) {
+  Serial.print("Received data: ");
+  Serial.println(data);
   int len = (int) strlen(data);
   if (len == 0)
     return ERROR;
   Type type = (Type) data[0];
+  if (type != REPLY)
+    sendReply(client);
   switch (type) {
     case KEEP_ALIVE: {
-      sendReply(client);
-      break;
+      onKeepAlive(client);
+      return KEEP_ALIVE;
     }
     case CONNECT: {
       onClientConnected(client);
-      sendReply(client);
-      break;
+      return CONNECT;
     }
     case DISCONNECT: {
       onClientDisconnected(client);
-      sendReply(client);
-      break;
+      return DISCONNECT;
     }
     case SUBSCRIBE: {
       onSubscribe(client, data);
-      sendReply(client);
-      break;
+      return SUBSCRIBE;
     }
     case UNSUBSCRIBE: {
       onUnsubscribe(client, data);
-      sendReply(client);
-      break;
+      return UNSUBSCRIBE;
     }
     case PUBLISH: {
       onPublish(data);
-      sendReply(client);
-      break;
+      return PUBLISH;
+    }
+    case REPLY: {
+      return REPLY;
     }
   }
   return ERROR;
 }
 
+// run this from loop to process all updates
 void PubSubServer::loop() {
+  cleanupCounter--;
+  if (cleanupCounter == 0) {
+    cleanupCounter = CLEANUP_PERIOD;
+    topics.foreach([](PubSub::Topic t) -> bool {
+      return t.lastUpdate > millis();
+    });
+  }
+
+  // read all available packets
   while (_client->parsePacket()) {
     char buffer[BUFFER_SIZE];
     int len = _client->read(buffer, BUFFER_SIZE);
     if (len > 0) {
       buffer[len] = 0;
-      handle(new Client(addressFromInt(_client->remoteIP()), _client->remotePort()), buffer);
+      IPAddress address = _client->remoteIP();
+      PubSub::Client client(&address, _client->remotePort());
+      handle(&client, buffer);
     }
     yield();
     delay(1);
@@ -64,23 +79,23 @@ WiFiUDP *PubSubServer::getClient() {
   return _client;
 }
 
-void PubSubServer::onClientConnected(Client *client) {
+void PubSubServer::onClientConnected(PubSub::Client *client) {
   // delete all topics related to this address, because it should resend them one more time
-  for (Topic t : topics) {
-    if (t.client->address == client->address)
-      topics.remove(t);
+  for (int i = topics.size() - 1; i >= 0; i--) {
+    if (topics.get(i).client->address == client->address)
+      topics.remove(i);
   }
 }
 
-void PubSubServer::onClientDisconnected(Client *client) {
+void PubSubServer::onClientDisconnected(PubSub::Client *client) {
   // delete all topics related to this address
-  for (Topic t : topics) {
-    if (t.client->address == client->address)
-      topics.remove(t);
+  for (int i = topics.size() - 1; i >= 0; i--) {
+    if (topics.get(i).client->address == client->address)
+      topics.remove(i);
   }
 }
 
-void PubSubServer::onSubscribe(Client *client, char *data) {
+void PubSubServer::onSubscribe(PubSub::Client *client, char *data) {
   int len = (int) strlen(data);
 
   if (len < 2)
@@ -92,12 +107,13 @@ void PubSubServer::onSubscribe(Client *client, char *data) {
     return; // topic not full
 
   char topic[topicLength + 1];
+  topic[topicLength] = 0;
   strncpy(topic, &data[2], topicLength);
 
-  topics.add(Topic(topic, client));
+  topics.add(PubSub::Topic(topic, client));
 }
 
-void PubSubServer::onUnsubscribe(Client *client, char *data) {
+void PubSubServer::onUnsubscribe(PubSub::Client *client, char *data) {
   int len = (int) strlen(data);
 
   if (len < 2)
@@ -109,9 +125,10 @@ void PubSubServer::onUnsubscribe(Client *client, char *data) {
     return; // topic not full
 
   char topic[topicLength + 1];
+  topic[topicLength] = 0;
   strncpy(topic, &data[2], topicLength);
 
-  topics.remove(Topic(topic, client));
+  topics.remove(PubSub::Topic(topic, client));
 }
 
 void PubSubServer::onPublish(char *data) {
@@ -126,35 +143,47 @@ void PubSubServer::onPublish(char *data) {
     return; // no topic
 
   char topic[topicLength + 1];
+  topic[topicLength] = 0;
   strncpy(topic, &data[2], topicLength);
 
   if (len < 3 + topicLength)
     return; // no message length
 
-  uint8_t messageLength = (uint8_t) data[topicLength + 3];
+  uint8_t messageLength = (uint8_t) data[topicLength + 2];
 
-  if (len < 4 + topicLength + messageLength)
+  if (len < 3 + topicLength + messageLength)
     return; // no message
 
   char message[messageLength + 1];
-  strncpy(message, &data[4 + topicLength], topicLength);
+  message[messageLength] = 0;
+  strncpy(message, &data[3 + topicLength], messageLength);
 
-  for (Topic t : topics) {
-    if (strcmp(t.topic, topic)) {
+  for (PubSub::Topic t : topics) {
+    if (strcmp(t.topic, topic) == 0) {
       sendPublish(t.client, topic, message);
     }
   }
 }
 
-void PubSubServer::sendReply(Client *client) {
-  UDPPacket(client->address, client->port, REPLY).send(this);
+void PubSubServer::sendReply(PubSub::Client *client) {
+  UDPPacket(client->address, client->port, REPLY).sendWithoutResponse(_client);
 }
 
-void PubSubServer::sendPublish(Client *client, char *topic, char *message) {
+void PubSubServer::sendPublish(PubSub::Client *client, char *topic, char *message) {
+  char topicLength[2] = {(char) strlen(topic), '\0'},
+          messageLength[2] = {(char) strlen(message), '\0'};
+
   UDPPacket(client, PUBLISH)
-          .add((char *) (uint8_t) strlen(topic))
+          .add(topicLength)
           .add(topic)
-          .add((char *) (uint8_t) strlen(message))
+          .add(messageLength)
           .add(message)
           .send(this);
+}
+
+void PubSubServer::onKeepAlive(PubSub::Client *client) {
+  for (PubSub::Topic t : topics) {
+    if (t.client->address == client->address)
+      t.lastUpdate = (int) millis();
+  }
 }

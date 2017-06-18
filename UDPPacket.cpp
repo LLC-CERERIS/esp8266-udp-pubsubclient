@@ -2,7 +2,7 @@
 #include "UDPPacket.h"
 
 UDPPacket UDPPacket::add(char *arg) {
-  args.add(arg);
+  args->add(arg);
   return *this;
 }
 
@@ -10,22 +10,21 @@ char *UDPPacket::send(PubSubClient *client) {
   int retryCount = DEFAULT_RETRY_COUNT;
   int timeout = DEFAULT_TIMEOUT;
   while (retryCount) {
-    client->getClient()->beginPacket(_address, _port);
-    client->getClient()->write((uint8_t) _type);
-
-    for (int i = 0; i < args.size(); i++) {
-      client->getClient()->write(args.get(i));
-    }
+    sendWithoutResponse(client->getClient());
 
     unsigned long timeDelay = millis();
     while (abs(millis() - timeDelay) < timeout) {
       if (client->getClient()->parsePacket()) {
-        int len = client->getClient()->read(client->getBuffer(), BUFFER_SIZE);
+        char buffer[BUFFER_SIZE];
+        int len = client->getClient()->read(buffer, BUFFER_SIZE);
         if (len > 0) {
-          client->getBuffer()[len] = 0;
-          if (client->handle(client->getBuffer()) != ERROR) {
+          buffer[len] = 0;
+          Type result = client->handle(buffer);
+          Serial.print("Result: ");
+          Serial.println(result);
+          if (result != ERROR) {
             client->setConnected(true);
-            return client->getBuffer();
+            return buffer;
           }
         }
       }
@@ -44,21 +43,17 @@ char *UDPPacket::send(PubSubServer *server) {
   int retryCount = DEFAULT_RETRY_COUNT;
   int timeout = DEFAULT_TIMEOUT;
   while (retryCount) {
-    server->getClient()->beginPacket(_address, _port);
-    server->getClient()->write((uint8_t) _type);
-
-    for (int i = 0; i < args.size(); i++) {
-      server->getClient()->write(args.get(i));
-    }
+    sendWithoutResponse(server->getClient());
 
     unsigned long timeDelay = millis();
     while (abs(millis() - timeDelay) < timeout) {
       if (server->getClient()->parsePacket()) {
-        char *buffer = new char[BUFFER_SIZE];
+        char buffer[BUFFER_SIZE];
         int len = server->getClient()->read(buffer, BUFFER_SIZE);
         if (len > 0) {
           buffer[len] = 0;
-          if (server->handle(new Client(_address, _port), buffer) != ERROR) {
+          PubSub::Client client(_address, _port);
+          if (server->handle(&client, buffer) != ERROR) {
             return buffer;
           }
         }
@@ -71,4 +66,20 @@ char *UDPPacket::send(PubSubServer *server) {
   }
 
   return nullptr;
+}
+
+void UDPPacket::sendWithoutResponse(WiFiUDP *client) {
+  client->beginPacket(*_address, (uint16_t) _port);
+  client->write((uint8_t) _type);
+  Serial.print("Sending packet: ");
+  Serial.println((uint8_t) _type);
+  for (int i = 0; i < args->size(); i++) {
+    client->print(args->get(i));
+  }
+  client->endPacket();
+}
+
+UDPPacket::~UDPPacket() {
+  Serial.println("Calling UDPPacket destructor");
+  delete args;
 }
