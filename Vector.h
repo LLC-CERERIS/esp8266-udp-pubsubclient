@@ -7,7 +7,7 @@
 template<typename T>
 class Vector {
 private:
-  T *data = new T[0];
+  T *data = NULL;
 
   int _elementSize = sizeof(T);
   int _size = 0;
@@ -15,9 +15,13 @@ private:
 
   void checkAndReallocate() {
     if (_size + 1 > _allocated) {
-      T *newData = new T[_size + 1];
-      memmove(newData, data, (size_t) (_elementSize * _size));
-      delete[] data;
+//      T *newData = new T[_size + 1];
+      T *newData = (T *) malloc((size_t) ((_size + 1) * _elementSize));
+      if (_size > 0) {
+        memmove(newData, data, (size_t) (_elementSize * _size));
+//        delete[] data;
+        free(data);
+      }
       data = newData;
     }
   };
@@ -29,7 +33,8 @@ public:
   ~Vector() {
     Serial.println("Calling Vector destructor");
     if (_size > 0)
-      delete[] data;
+//      delete[] data;
+      free(data);
     Serial.println("Vector memory freed");
   }
 
