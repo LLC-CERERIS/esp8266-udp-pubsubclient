@@ -1,29 +1,26 @@
 #ifndef UDPPACKET_H
 #define UDPPACKET_H
 
-
 #include "Vector.h"
 #include "PubSubClient.h"
 #include "PubSubServer.h"
 #include "Arduino.h"
+#include "SPtr.h"
 
 class UDPPacket {
 private:
-  Vector<char *> *args = new Vector<char *>();
+  Ref<Vector<char*>> args;
   IPAddress *_address;
   int _port;
   Type _type;
 
 public:
-  UDPPacket(PubSub::Client *client, Type type) : UDPPacket(client->address, client->port, type) {}
+
+  UDPPacket(PubSub::Client *client, Type type);
 
   ~UDPPacket();
 
-  UDPPacket(IPAddress *address, int port, Type type) {
-    this->_address = address;
-    this->_port = port;
-    this->_type = type;
-  }
+  UDPPacket(IPAddress *address, int port, Type type);
 
   UDPPacket add(char *arg);
   char *send(PubSubClient *client);

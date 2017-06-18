@@ -1,31 +1,39 @@
 #include <iostream>
-#include "Vector.h"
+#include "SPtr.h"
 
-struct S {
-  int i1, i2, i3, i4;
-
-  S() {}
-
-  S(int i1, int i2, int i3, int i4) {
-    this->i1 = i1;
-    this->i2 = i2;
-    this->i3 = i3;
-    this->i4 = i4;
+class A {
+public:
+  A() {
+    printf("Constructing A\n");
   }
 
-  char *toString() {
-    char *str = new char[1000];
-    sprintf(str, "%i %i %i %i", i1, i2, i3, i4);
-    return str;
+  ~A() {
+    printf("Destructing A\n");
   }
 };
 
-int main() {
-  Vector<char *> v;
+class B {
+public:
+  Ref<A> ref;
 
-  v.add((char *) "test1").add((char *) "test2");
-
-  for (int i = 0; i < v.size(); i++) {
-    printf("%s\n", v.get(i));
+  B() {
+    printf("Constructing B\n");
+    SPtr<A> *sptr = new SPtr<A>(new A());
+    ref = *sptr->get();
+    printf("Assigning Ref\n");
   }
+
+  ~B() {
+    printf("Destructing B\n");
+  }
+};
+
+void func1() {
+  B b;
+}
+
+int main() {
+  printf("Entering func1()\n");
+  func1();
+  printf("Leaving func1()\n");
 }

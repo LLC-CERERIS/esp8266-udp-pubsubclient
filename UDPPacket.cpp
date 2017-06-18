@@ -80,6 +80,22 @@ void UDPPacket::sendWithoutResponse(WiFiUDP *client) {
 }
 
 UDPPacket::~UDPPacket() {
-  Serial.println("Calling UDPPacket destructor");
-  delete args;
+  Serial.print("Calling UDPPacket destructor of type ");
+  Serial.println(_type);
+  Serial.print("UDPPacket address: ");
+  Serial.println((int) this);
+//  delete args;
 }
+
+UDPPacket::UDPPacket(IPAddress *address, int port, Type type) {
+  SPtr<Vector<char *>> *ptr = new SPtr<Vector<char *>>(new Vector<char *>);
+  args = *ptr->get();
+
+  this->_address = address;
+  this->_port = port;
+  this->_type = type;
+  Serial.print("Creating UDPPacket of type ");
+  Serial.println(type);
+}
+
+UDPPacket::UDPPacket(PubSub::Client *client, Type type) : UDPPacket(client->address, client->port, type) {}

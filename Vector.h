@@ -4,6 +4,11 @@
 #include <cstring>
 #include "Arduino.h"
 
+
+extern "C" {
+#include "user_interface.h"
+}
+
 template<typename T>
 class Vector {
 private:
@@ -15,14 +20,15 @@ private:
 
   void checkAndReallocate() {
     if (_size + 1 > _allocated) {
-//      T *newData = new T[_size + 1];
-      T *newData = (T *) malloc((size_t) ((_size + 1) * _elementSize));
-      if (_size > 0) {
+      T *newData = new T[_size + 1];
+//      T *newData = (T *) malloc((size_t) ((_size + 1) * _elementSize));
+      if (_allocated > 0) {
         memmove(newData, data, (size_t) (_elementSize * _size));
-//        delete[] data;
-        free(data);
+        delete[] data;
+//        free(data);
       }
       data = newData;
+      _allocated = _size + 1;
     }
   };
 
@@ -31,8 +37,13 @@ public:
   typedef const T *const_iterator;
 
   ~Vector() {
-    Serial.println("Calling Vector destructor");
-    if (_size > 0)
+    Serial.print("Vector to destruct address: ");
+    Serial.println((int) this);
+//    Serial.print("Free memory: ");
+//    Serial.println(system_get_free_heap_size());
+//    Serial.print("Calling Vector destructor. Current allocated count: ");
+//    Serial.println(_allocated);
+    if (_allocated > 0)
 //      delete[] data;
       free(data);
     Serial.println("Vector memory freed");
