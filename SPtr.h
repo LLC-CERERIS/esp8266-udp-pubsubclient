@@ -1,8 +1,11 @@
 #ifndef TESTPROJ_SPTR_H
 #define TESTPROJ_SPTR_H
 
+#ifdef ESP8266
 #include "Arduino.h"
 
+#define printf(arg) Serial.print(arg)
+#endif
 //#include <cstdio>
 
 template<typename T> class SPtr;
@@ -16,33 +19,28 @@ private:
 
 public:
   Ref<T> *get() {
-    Serial.println("Obtaining Ref");
-//    printf("Obtaining Ref\n");
     Ref<T> *ref = new Ref<T>(this);
     return ref;
   }
 
-  void inc() {
+  void incr() {
     count++;
   }
 
   void decr() {
     count--;
 
-    if (count == 0)
+    if (count == 0) {
       delete this;
+    }
   }
 
 
   SPtr(T *object) {
-    Serial.println("Constructing SPtr");
-//    printf("Constructing SPtr\n");
     this->object = object;
   }
 
   ~SPtr() {
-    Serial.println("Destructing SPtr");
-//    printf("Destructing SPtr\n");
     delete object;
   }
 
@@ -50,21 +48,19 @@ public:
 };
 
 template<typename T>
-class Ref {
+struct Ref {
 private:
   SPtr<T> *ptr;
 
 public:
   Ref(SPtr<T> *ptr) {
     this->ptr = ptr;
-    ptr->inc();
+    ptr->incr();
   }
 
   Ref() {}
 
   ~Ref() {
-    Serial.println("Destructing Ref");
-//    printf("Destructing Ref\n");
     ptr->decr();
   }
 

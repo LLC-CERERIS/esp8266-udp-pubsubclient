@@ -31,7 +31,7 @@ PubSubClient &PubSubClient::setClient(WiFiUDP &client) {
   return *this;
 }
 
-void PubSubClient::setServer(IPAddress *address, uint16_t port) {
+void PubSubClient::setServer(IPAddress address, uint16_t port) {
   _address = address;
   _port = port;
 }
@@ -96,18 +96,6 @@ Type PubSubClient::handle(const char *data) {
 
   Type type = (Type) data[0];
 
-  Serial.print("Handling packet of type ");
-  Serial.print(type);
-  Serial.print(" and length ");
-  Serial.print(len);
-  Serial.print(": ");
-  Serial.print(": >>> ");
-  for (int i = 0; i < len; i++) {
-    Serial.print((uint8_t) data[i]);
-    Serial.print(" ");
-  }
-  Serial.println("<<<");
-
   switch (type) {
     case REPLY:
       return REPLY;
@@ -142,7 +130,7 @@ void PubSubClient::smartDelay(const uint32_t delayTime) {
 }
 
 void PubSubClient::loop() {
-  if (abs((millis() - _time) / 1000.0) > _keepAliveTimeout) {
+  if (abs((int) ((millis() - _time) / 1000)) > _keepAliveTimeout) {
     keepAlive();
     _time = millis();
   }
@@ -152,10 +140,7 @@ void PubSubClient::loop() {
     int len = _client->read(buffer, BUFFER_SIZE);
     if (len > 0) {
       buffer[len] = 0;
-      if (handle(buffer)) {
-        setConnected(true);
-        buffer[0] = 0;
-      }
+      handle(buffer);
     }
     yield();
     delay(1);
@@ -176,7 +161,6 @@ PubSubClient &PubSubClient::setDisconnectCallback(DISCONNECT_CALLBACK_SIGNATURE)
 }
 
 void PubSubClient::setServer(char *address, uint16_t port) {
-  _address = new IPAddress;
-  _address->fromString(address);
+  _address.fromString(address);
   _port = port;
 }

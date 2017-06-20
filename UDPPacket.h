@@ -9,8 +9,8 @@
 
 class UDPPacket {
 private:
-  Ref<Vector<char*>> args;
-  IPAddress *_address;
+  Ref<Vector<char*>> *args;
+  IPAddress _address;
   int _port;
   Type _type;
 
@@ -20,11 +20,11 @@ public:
 
   ~UDPPacket();
 
-  UDPPacket(IPAddress *address, int port, Type type);
+  UDPPacket(IPAddress address, int port, Type type);
 
-  UDPPacket add(char *arg);
-  char *send(PubSubClient *client);
-  char *send(PubSubServer *server);
+  UDPPacket &add(char *arg);
+  void send(PubSubClient *client);
+  void send(PubSubServer *server);
   void sendWithoutResponse(WiFiUDP *client);
 };
 

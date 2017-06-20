@@ -1,8 +1,11 @@
 #include <iostream>
 #include "SPtr.h"
+#include "Vector.h"
 
 class A {
 public:
+  Vector<char*> vec;
+
   A() {
     printf("Constructing A\n");
   }
@@ -19,8 +22,14 @@ public:
   B() {
     printf("Constructing B\n");
     SPtr<A> *sptr = new SPtr<A>(new A());
-    ref = *sptr->get();
     printf("Assigning Ref\n");
+    ref = *sptr->get();
+  }
+
+  B &add(char *str) {
+    printf("Adding element\n");
+    ref->vec.add(str);
+    return *this;
   }
 
   ~B() {
@@ -29,7 +38,7 @@ public:
 };
 
 void func1() {
-  B b;
+  B().add("s1").add("s2").add("s3");
 }
 
 int main() {

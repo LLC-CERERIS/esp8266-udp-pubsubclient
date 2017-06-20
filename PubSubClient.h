@@ -27,7 +27,7 @@ public:
   PubSubClient &setClient(WiFiUDP &client);
   PubSubClient &setKeepAliveTimeout(uint8_t timeout = DEFAULT_KEEP_ALIVE_TIMEOUT);
 
-  void setServer(IPAddress *address, uint16_t port);
+  void setServer(IPAddress address, uint16_t port);
 
   void setServer(char* address, uint16_t port);
 
@@ -59,7 +59,7 @@ private:
   CONNECT_CALLBACK_SIGNATURE;
   DISCONNECT_CALLBACK_SIGNATURE;
   uint8_t _keepAliveTimeout; // Period between keep-alive checks
-  IPAddress *_address; // Server address
+  IPAddress _address; // Server address
   uint16_t _port; // Server port
   bool _connected; // Connection state
   unsigned long _time; // Last keep-alive check time

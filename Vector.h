@@ -2,12 +2,16 @@
 #define VECTOR_H
 
 #include <cstring>
-#include "Arduino.h"
 
+#ifdef ESP8266
+#include "Arduino.h"
 
 extern "C" {
 #include "user_interface.h"
 }
+
+#define printf(str) Serial.print(str)
+#endif
 
 template<typename T>
 class Vector {
@@ -21,11 +25,9 @@ private:
   void checkAndReallocate() {
     if (_size + 1 > _allocated) {
       T *newData = new T[_size + 1];
-//      T *newData = (T *) malloc((size_t) ((_size + 1) * _elementSize));
       if (_allocated > 0) {
         memmove(newData, data, (size_t) (_elementSize * _size));
         delete[] data;
-//        free(data);
       }
       data = newData;
       _allocated = _size + 1;
@@ -37,16 +39,8 @@ public:
   typedef const T *const_iterator;
 
   ~Vector() {
-    Serial.print("Vector to destruct address: ");
-    Serial.println((int) this);
-//    Serial.print("Free memory: ");
-//    Serial.println(system_get_free_heap_size());
-//    Serial.print("Calling Vector destructor. Current allocated count: ");
-//    Serial.println(_allocated);
     if (_allocated > 0)
-//      delete[] data;
       free(data);
-    Serial.println("Vector memory freed");
   }
 
   iterator begin() {
@@ -65,7 +59,6 @@ public:
     return &data[_size];
   }
 
-  // TODO: check if it works on ESP8266
   // if "function" returns true, remove element
   void foreach(bool (*function)(T element)) {
     for (int i = _size - 1; i >= 0; i--) {

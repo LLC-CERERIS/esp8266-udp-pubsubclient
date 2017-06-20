@@ -63,7 +63,7 @@ void PubSubServer::loop() {
     if (len > 0) {
       buffer[len] = 0;
       IPAddress address = _client->remoteIP();
-      PubSub::Client client(&address, _client->remotePort());
+      PubSub::Client client(address, _client->remotePort());
       handle(&client, buffer);
     }
     yield();

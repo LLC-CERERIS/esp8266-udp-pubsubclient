@@ -12,10 +12,10 @@ const int MAX_DISCONNECT_TIME = DEFAULT_KEEP_ALIVE_TIMEOUT * DEFAULT_RETRY_COUNT
 
 namespace PubSub {
   struct Client {
-    IPAddress *address;
+    IPAddress address;
     int port;
 
-    Client(IPAddress *address, int port) {
+    Client(IPAddress address, int port) {
       this->address = address;
       this->port = port;
     }

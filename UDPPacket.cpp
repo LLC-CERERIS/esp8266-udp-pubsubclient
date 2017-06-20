@@ -1,30 +1,28 @@
 #include "PubSub.h"
 #include "UDPPacket.h"
 
-UDPPacket UDPPacket::add(char *arg) {
-  args->add(arg);
+UDPPacket &UDPPacket::add(char *arg) {
+  (*args)->add(arg);
   return *this;
 }
 
-char *UDPPacket::send(PubSubClient *client) {
+void UDPPacket::send(PubSubClient *client) {
   int retryCount = DEFAULT_RETRY_COUNT;
   int timeout = DEFAULT_TIMEOUT;
   while (retryCount) {
     sendWithoutResponse(client->getClient());
 
     unsigned long timeDelay = millis();
-    while (abs(millis() - timeDelay) < timeout) {
+    while (abs((int) (millis() - timeDelay)) < timeout) {
       if (client->getClient()->parsePacket()) {
         char buffer[BUFFER_SIZE];
         int len = client->getClient()->read(buffer, BUFFER_SIZE);
         if (len > 0) {
           buffer[len] = 0;
           Type result = client->handle(buffer);
-          Serial.print("Result: ");
-          Serial.println(result);
           if (result != ERROR) {
             client->setConnected(true);
-            return buffer;
+            return;
           }
         }
       }
@@ -36,10 +34,9 @@ char *UDPPacket::send(PubSubClient *client) {
   }
 
   client->setConnected(false);
-  return nullptr;
 }
 
-char *UDPPacket::send(PubSubServer *server) {
+void UDPPacket::send(PubSubServer *server) {
   int retryCount = DEFAULT_RETRY_COUNT;
   int timeout = DEFAULT_TIMEOUT;
   while (retryCount) {
@@ -54,7 +51,7 @@ char *UDPPacket::send(PubSubServer *server) {
           buffer[len] = 0;
           PubSub::Client client(_address, _port);
           if (server->handle(&client, buffer) != ERROR) {
-            return buffer;
+            return;
           }
         }
       }
@@ -65,37 +62,31 @@ char *UDPPacket::send(PubSubServer *server) {
     retryCount--;
   }
 
-  return nullptr;
+  return;
 }
 
 void UDPPacket::sendWithoutResponse(WiFiUDP *client) {
-  client->beginPacket(*_address, (uint16_t) _port);
+  client->beginPacket(_address, (uint16_t) _port);
   client->write((uint8_t) _type);
   Serial.print("Sending packet: ");
   Serial.println((uint8_t) _type);
-  for (int i = 0; i < args->size(); i++) {
-    client->print(args->get(i));
+  for (int i = 0; i < (*args)->size(); i++) {
+    client->print((*args)->get(i));
   }
   client->endPacket();
 }
 
 UDPPacket::~UDPPacket() {
-  Serial.print("Calling UDPPacket destructor of type ");
-  Serial.println(_type);
-  Serial.print("UDPPacket address: ");
-  Serial.println((int) this);
-//  delete args;
+  delete args;
 }
 
-UDPPacket::UDPPacket(IPAddress *address, int port, Type type) {
+UDPPacket::UDPPacket(IPAddress address, int port, Type type) {
   SPtr<Vector<char *>> *ptr = new SPtr<Vector<char *>>(new Vector<char *>);
-  args = *ptr->get();
+  args = ptr->get();
 
   this->_address = address;
   this->_port = port;
   this->_type = type;
-  Serial.print("Creating UDPPacket of type ");
-  Serial.println(type);
 }
 
 UDPPacket::UDPPacket(PubSub::Client *client, Type type) : UDPPacket(client->address, client->port, type) {}
